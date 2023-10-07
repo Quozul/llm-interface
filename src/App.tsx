@@ -2,13 +2,14 @@ import styled from "@emotion/styled";
 import { createRef, useState } from "react";
 import { css } from "@emotion/react";
 import AutoLayout from "./AutoLayout.tsx";
+import Markdown from "react-markdown";
 
 // ChatML format: https://github.com/openai/openai-python/blob/main/chatml.md
 
-const chatbotName = "ChatGPT";
+const chatbotName = "Mistral";
 
 const SYSTEM_PROMPT = `<|im_start|>system
-You are ${chatbotName}, a large language model trained by OpenAI. Answer as concisely as possible.<|im_end|>`;
+You are ${chatbotName}, a large language model trained by MistralAI. Answer as concisely as possible in the User's language. Markdown format allowed.<|im_end|>`;
 
 async function queryLlama(
   signal: AbortSignal,
@@ -106,82 +107,74 @@ const Assistant = () => {
 
   return (
     <Open>
-      <Main>
-        <Messages ref={ref}>
-          {[...messages].reverse().map(({ content, author }) => (
-            <Bubble side={author === "User" ? "right" : "left"}>
-              {content.split("\n").map((line) => (
-                <span>{line}</span>
-              ))}
-            </Bubble>
-          ))}
-        </Messages>
+      <Messages ref={ref}>
+        {[...messages].reverse().map(({ content, author }) => (
+          <Bubble side={author === "User" ? "right" : "left"}>
+            <Markdown>{content}</Markdown>
+          </Bubble>
+        ))}
+      </Messages>
 
-        <Commands>
-          <AutoLayout gap={10} justify="space-between">
-            <AutoLayout gap={10}>
-              <QuickQuestion
-                onClick={async () => {
-                  await handleSubmit("Who are you?");
-                }}
-                disabled={isLoading}
-              >
-                Who are you?
-              </QuickQuestion>
-            </AutoLayout>
+      <Commands>
+        <AutoLayout gap={10} justify="space-between">
+          <AutoLayout gap={10}>
+            <QuickQuestion
+              onClick={async () => {
+                await handleSubmit("Who are you?");
+              }}
+              disabled={isLoading}
+            >
+              Who are you?
+            </QuickQuestion>
+          </AutoLayout>
 
-            <AutoLayout gap={10}>
-              {isLoading && abortController !== null && (
-                <QuickQuestion
-                  onClick={() => {
-                    abortController.abort();
-                  }}
-                  background="red"
-                >
-                  Stop
-                </QuickQuestion>
-              )}
-
+          <AutoLayout gap={10}>
+            {isLoading && abortController !== null && (
               <QuickQuestion
                 onClick={() => {
-                  setMessages([]);
+                  abortController.abort();
                 }}
                 background="red"
               >
-                Effacer
+                Stop
               </QuickQuestion>
-            </AutoLayout>
+            )}
+
+            <QuickQuestion
+              onClick={() => {
+                setMessages([]);
+              }}
+              background="red"
+            >
+              Effacer
+            </QuickQuestion>
           </AutoLayout>
-        </Commands>
+        </AutoLayout>
+      </Commands>
 
-        <Form
-          onSubmit={async (event) => {
-            event.preventDefault();
+      <Form
+        onSubmit={async (event) => {
+          event.preventDefault();
 
-            if (!isLoading) {
-              setValue("");
-              await handleSubmit(value);
-            }
+          if (!isLoading) {
+            setValue("");
+            await handleSubmit(value);
+          }
+        }}
+      >
+        <Input
+          onInput={({ currentTarget }) => {
+            setValue(currentTarget.value);
           }}
-        >
-          <Input
-            onInput={({ currentTarget }) => {
-              currentTarget.style.height = `${Math.min(
-                20 * 5,
-                currentTarget.scrollHeight,
-              )}px`;
-              setValue(currentTarget.value);
-            }}
-            type="text"
-            value={value}
-            autoComplete="off"
-            name="question"
-            placeholder={`Ask something to ${chatbotName}…`}
-          />
+          type="text"
+          value={value}
+          autoComplete="off"
+          name="question"
+          placeholder={`Ask something to ${chatbotName}…`}
+        />
 
-          <button disabled={isLoading}>Envoyer</button>
-        </Form>
-      </Main>
+        <button disabled={isLoading}>Envoyer</button>
+      </Form>
     </Open>
   );
 };
@@ -190,25 +183,23 @@ export default Assistant;
 
 const Open = styled.div`
   background-color: var(--color-neutral-100);
-  border-radius: 10px;
   view-transition-name: neo-assistant;
   display: flex;
   margin: auto;
   flex-direction: column;
   gap: 20px;
-  width: 530px;
+  width: 640px;
+  flex-grow: 1;
   height: 100vh;
+  overflow: hidden;
+  padding: 10px 0 30px 0;
 `;
 
-const Main = styled.main`
+const Messages = styled.main`
   display: flex;
   gap: 20px;
   flex-direction: column;
-  height: 100%;
   padding: 20px;
-`;
-
-const Messages = styled(Main)`
   flex-direction: column-reverse;
   flex-grow: 1;
   overflow-y: auto;
