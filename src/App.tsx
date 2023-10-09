@@ -1,15 +1,19 @@
 import styled from "@emotion/styled";
-import { createRef, useState } from "react";
+import { createRef, useCallback, useEffect, useState } from "react";
 import { css } from "@emotion/react";
 import AutoLayout from "./AutoLayout.tsx";
 import Markdown from "react-markdown";
+import CodeBlock from "./CodeBlock.tsx";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import ContextMenu from "./ContextMenu.tsx";
 
 // ChatML format: https://github.com/openai/openai-python/blob/main/chatml.md
 
 const chatbotName = "Mistral";
+const userName = "User";
 
 const SYSTEM_PROMPT = `<|im_start|>system
-You are ${chatbotName}, a large language model trained by MistralAI. Answer as concisely as possible in the User's language. Markdown format allowed.<|im_end|>`;
+You are ${chatbotName}, a large language model trained by MistralAI. Answer as concisely as possible in the User's language. If the user asks for a game, play with them. Markdown format allowed.<|im_end|>`;
 
 async function queryLlama(
   signal: AbortSignal,
@@ -50,6 +54,10 @@ ${history}
     signal,
   });
 
+  if (response.body === null) {
+    return;
+  }
+
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
 
@@ -70,7 +78,7 @@ ${history}
   }
 }
 
-type MessageData = { content: string; author: "User" | "ChatGPT" };
+export type MessageData = { content: string; author: string };
 
 const Assistant = () => {
   const [value, setValue] = useState<string>("");
@@ -78,12 +86,14 @@ const Assistant = () => {
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
   const [messages, setMessages] = useState<MessageData[]>([]);
-  const ref = createRef<HTMLDivElement>();
+  const [contextMenuMessage, setContextMenuMessage] =
+    useState<MessageData | null>(null);
+  const ref = createRef<HTMLInputElement>();
 
   const handleSubmit = async (content: string) => {
     const newMessages: MessageData[] = [
       ...messages,
-      { content, author: "User" },
+      { content, author: userName },
     ];
     setMessages(newMessages);
 
@@ -105,76 +115,125 @@ const Assistant = () => {
     setIsLoading(false);
   };
 
+  const getFocus = useCallback(() => {
+    ref.current?.focus();
+  }, [ref]);
+
+  useEffect(() => {
+    document.addEventListener("keypress", getFocus);
+
+    return () => {
+      document.removeEventListener("keypress", getFocus);
+    };
+  }, [getFocus]);
+
   return (
     <Open>
-      <Messages ref={ref}>
-        {[...messages].reverse().map(({ content, author }) => (
-          <Bubble side={author === "User" ? "right" : "left"}>
-            <Markdown>{content}</Markdown>
-          </Bubble>
-        ))}
+      <Messages>
+        {[...messages].reverse().map((message) => {
+          const { content, author } = message;
+
+          return (
+            <Bubble
+              side={author === userName ? "right" : "left"}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                setContextMenuMessage(message);
+              }}
+            >
+              <Copy
+                onClick={async () => {
+                  await navigator.clipboard.writeText(content);
+                }}
+              >
+                <i className="bi-clipboard"></i>
+              </Copy>
+
+              <Markdown components={{ code: CodeBlock }}>{content}</Markdown>
+            </Bubble>
+          );
+        })}
       </Messages>
 
-      <Commands>
-        <AutoLayout gap={10} justify="space-between">
-          <AutoLayout gap={10}>
-            <QuickQuestion
-              onClick={async () => {
-                await handleSubmit("Who are you?");
-              }}
-              disabled={isLoading}
-            >
-              Who are you?
-            </QuickQuestion>
-          </AutoLayout>
+      <Inner>
+        <Commands>
+          <AutoLayout gap={10} justify="space-between">
+            <AutoLayout gap={10}>
+              <QuickQuestion
+                onClick={async () => {
+                  await handleSubmit("Who are you?");
+                }}
+                disabled={isLoading}
+              >
+                Who are you?
+              </QuickQuestion>
 
-          <AutoLayout gap={10}>
-            {isLoading && abortController !== null && (
+              <QuickQuestion
+                onClick={async () => {
+                  await handleSubmit(
+                    "Write a python code to split a file on line breaks and explain it.",
+                  );
+                }}
+                disabled={isLoading}
+              >
+                Split file
+              </QuickQuestion>
+            </AutoLayout>
+
+            <AutoLayout gap={10}>
+              {isLoading && abortController !== null && (
+                <QuickQuestion
+                  onClick={() => {
+                    abortController.abort();
+                  }}
+                  background="#f38ba8"
+                >
+                  Stop
+                </QuickQuestion>
+              )}
+
               <QuickQuestion
                 onClick={() => {
-                  abortController.abort();
+                  setMessages([]);
                 }}
-                background="red"
+                background="#f38ba8"
               >
-                Stop
+                Clear
               </QuickQuestion>
-            )}
-
-            <QuickQuestion
-              onClick={() => {
-                setMessages([]);
-              }}
-              background="red"
-            >
-              Effacer
-            </QuickQuestion>
+            </AutoLayout>
           </AutoLayout>
-        </AutoLayout>
-      </Commands>
+        </Commands>
 
-      <Form
-        onSubmit={async (event) => {
-          event.preventDefault();
+        <Form
+          onSubmit={async (event) => {
+            event.preventDefault();
 
-          if (!isLoading) {
-            setValue("");
-            await handleSubmit(value);
-          }
-        }}
-      >
-        <Input
-          onInput={({ currentTarget }) => {
-            setValue(currentTarget.value);
+            if (!isLoading) {
+              setValue("");
+              await handleSubmit(value);
+            }
           }}
-          type="text"
-          value={value}
-          autoComplete="off"
-          name="question"
-          placeholder={`Ask something to ${chatbotName}…`}
-        />
+        >
+          <Input
+            onInput={({ currentTarget }) => {
+              setValue(currentTarget.value);
+            }}
+            ref={ref}
+            type="text"
+            value={value}
+            autoComplete="off"
+            name="question"
+            placeholder={`Ask something to ${chatbotName}…`}
+          />
 
-        <button disabled={isLoading}>Envoyer</button>
-      </Form>
+          <Button disabled={isLoading}>
+            <i className="bi-send" />
+            Send
+          </Button>
+        </Form>
+
+        {contextMenuMessage && <ContextMenu message={contextMenuMessage} />}
+      </Inner>
     </Open>
   );
 };
@@ -182,28 +241,27 @@ const Assistant = () => {
 export default Assistant;
 
 const Open = styled.div`
-  background-color: var(--color-neutral-100);
-  view-transition-name: neo-assistant;
   display: flex;
-  margin: auto;
   flex-direction: column;
-  gap: 20px;
-  width: 640px;
+  margin: auto;
+  width: 100%;
+  max-width: 640px;
   flex-grow: 1;
-  height: 100vh;
-  overflow: hidden;
-  padding: 10px 0 30px 0;
+  height: 100%;
+  background-color: #1e1e2e;
 `;
 
-const Messages = styled.main`
+const Inner = styled.div`
+  padding: 10px;
   display: flex;
-  gap: 20px;
   flex-direction: column;
-  padding: 20px;
-  flex-direction: column-reverse;
+  gap: 20px;
+`;
+
+const Messages = styled(Inner)`
   flex-grow: 1;
+  flex-direction: column-reverse;
   overflow-y: auto;
-  padding: 0;
 `;
 
 const Commands = styled.div`
@@ -212,21 +270,34 @@ const Commands = styled.div`
 `;
 
 const Bubble = styled.div<{ side: "left" | "right" }>`
-  border-radius: 10px;
-  padding: 10px;
+  position: relative;
+  border-radius: 25px;
+  padding: 0 16px;
   ${({ side }) =>
     side === "left"
       ? css`
           border-bottom-left-radius: 0;
-          background-color: lightblue;
+          background: #313244;
+          color: #cdd6f4;
           margin-right: 20px;
         `
       : css`
           border-bottom-right-radius: 0;
-          background-color: lightgreen;
+          background: #89b4fa;
+          color: #1e1e2e;
           margin-left: 20px;
         `};
-  white-space: pre-line;
+`;
+
+const Copy = styled.button`
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  aspect-ratio: 1/1;
+  border: none;
+  font-size: 0.75rem;
+  border-radius: 5px;
+  cursor: pointer;
 `;
 
 const Input = styled.input`
@@ -234,20 +305,23 @@ const Input = styled.input`
   display: inline-flex;
   font-weight: var(--font-weight-medium);
   font-size: 1rem;
-  line-height: 22px;
-  padding: 0;
-  background-color: var(--color-neutral-100);
-  color: var(--color-neutral-700);
-  border: 1px solid var(--color-neutral-700);
+  padding: 10px;
+  background-color: #181925;
+  color: white;
   cursor: text;
+  border: none;
   gap: 10px;
-  border-radius: 5px;
+  border-radius: 10px;
   justify-content: center;
   word-break: break-word;
   resize: none;
 
   &:focus-visible {
     outline: none;
+  }
+
+  &::placeholder {
+    color: #75757e;
   }
 `;
 
@@ -256,12 +330,18 @@ const Form = styled.form`
   gap: 10px;
 `;
 
-const QuickQuestion = styled.button<{ background?: string }>`
-  background-color: ${({ background }) => background || "black"};
-  color: white;
-  padding: 10px;
-  border-radius: 100px;
+const Button = styled.button`
+  background-color: #f9e2af;
   border: none;
+  padding: 10px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 1rem;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+`;
+
+const QuickQuestion = styled(Button)<{ background?: string }>`
+  background: ${({ background = "#89b4fa" }) => background};
 `;
