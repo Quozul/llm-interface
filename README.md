@@ -1,27 +1,39 @@
-# React + TypeScript + Vite
+# LLM interface
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An attempt at making a more modern alternative to the default llama.cpp server's implementation.
 
-Currently, two official plugins are available:
+![Screenshot of the interface](.github/screenshot.png)
+> I am using the [Mistral](https://huggingface.co/mistralai/Mistral-7B-v0.1) model in this screenshot.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## Expanding the ESLint configuration
+The interface supports the following features:
+- Markdown render for messages
+- Codeblocks rendering
+- Simple prompt customisation & presets
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+## How to use?
 
-- Configure the top-level `parserOptions` property like this:
+You'll need to have a llama.cpp server running locally:
 
-```js
-   parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-   },
+```shell
+git clone https://github.com/ggerganov/llama.cpp.git
+cd llama.cpp
+make
+./server --help
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+I assume you know how to use llama.cpp, the above is just a quickstart.
+You'll need to find and download models.
+Instruction on that are provided on llama.cpp project's page.
+
+Clone this repository and start the dev server:
+
+```shell
+git clone https://github.com/Quozul/llm-interface.git
+cd llm-interface
+npm install # Install the dependencies
+npm run dev # Start the integrated server using Vite
+```
+
+Open http://localhost:3000 and start playing with the llm.

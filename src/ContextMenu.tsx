@@ -1,4 +1,4 @@
-import { MessageData } from "./App.tsx";
+import { MessageData } from "./Chat.tsx";
 import styled from "@emotion/styled";
 
 type Props = {
