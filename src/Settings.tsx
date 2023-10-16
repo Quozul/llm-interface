@@ -12,6 +12,7 @@ const TEMPLATES = {
       `${userName}:`,
     ],
   },
+  // ChatML format: https://github.com/openai/openai-python/blob/main/chatml.md
   chatml: {
     promptTemplate:
       "<|im_start|>system\n{{prompt}}<|im_end|>\n{{history}}\n<|im_start|>{{char}}\n",
@@ -49,7 +50,7 @@ export default function Settings() {
 
   return (
     <div className="flex-col p-1 overflow-auto">
-      <div className="flex-col bg-gray-300 p-1 rounded-1">
+      <div className="flex-col bg-gray-300 p-2 rounded-1">
         <h2>General settings</h2>
 
         <label className="flex-col">
@@ -93,7 +94,7 @@ export default function Settings() {
         </label>
       </div>
 
-      <div className="flex-col bg-gray-300 p-1 rounded-1">
+      <div className="flex-col bg-gray-300 p-2 rounded-1">
         <h2>Prompt template</h2>
 
         <div className="flex align-center">

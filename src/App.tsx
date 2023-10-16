@@ -5,7 +5,7 @@ import SettingsContextProvider from "./SettingsContext.tsx";
 export default function App() {
   return (
     <SettingsContextProvider>
-      <div className="grid cols-2 h-100">
+      <div className="grid cols-1 lg:cols-2 h-100">
         <Settings />
         <Chat />
       </div>

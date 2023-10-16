@@ -1,4 +1,3 @@
-import styled from "@emotion/styled";
 import { createRef, useCallback, useContext, useEffect, useState } from "react";
 import Markdown from "react-markdown";
 import CodeBlock from "./CodeBlock.tsx";
@@ -7,76 +6,8 @@ import ContextMenu from "./ContextMenu.tsx";
 import "./style.css";
 import TextArea from "./TextArea.tsx";
 import { SettingsContext } from "./SettingsContext.tsx";
-
-// ChatML format: https://github.com/openai/openai-python/blob/main/chatml.md
-
-async function queryLlama(
-  llamaEndpoint: string,
-  systemPrompt: string,
-  chatbotName: string,
-  promptTemplate: string,
-  stop: string[],
-  signal: AbortSignal,
-  history: string,
-  callback: (content: string) => void,
-) {
-  let fullContent = "";
-  const body = {
-    stream: true,
-    n_predict: 400,
-    temperature: 0.7,
-    stop,
-    repeat_last_n: 256,
-    repeat_penalty: 1.18,
-    top_k: 40,
-    top_p: 0.5,
-    tfs_z: 1,
-    typical_p: 1,
-    presence_penalty: 0,
-    frequency_penalty: 0,
-    mirostat: 2,
-    mirostat_tau: 5,
-    mirostat_eta: 0.1,
-    grammar: "",
-    n_probs: 0,
-    prompt: promptTemplate
-      .replace("{{prompt}}", systemPrompt)
-      .replace("{{history}}", history)
-      .replace("{{char}}", chatbotName),
-  };
-
-  const response = await fetch(`${llamaEndpoint}/completion`, {
-    method: "POST",
-    body: JSON.stringify(body),
-    headers: {
-      "content-type": "application/json",
-    },
-    signal,
-  });
-
-  if (response.body === null) {
-    return;
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-
-  while (true) {
-    try {
-      const { done, value } = await reader.read();
-      const decoded = decoder.decode(value);
-      const cleaned = decoded.split("\n")[0].replace("data: ", "").trim();
-      const { content, stop } = JSON.parse(cleaned);
-      if (stop || done) {
-        break;
-      }
-      fullContent += content;
-      callback(fullContent.trim());
-    } catch (e) {
-      break;
-    }
-  }
-}
+import useCompletion from "./useCompletion.ts";
+import useClickOutside from "./useClickOutside.ts";
 
 export type MessageData = { content: string; author: string };
 
@@ -89,6 +20,10 @@ const Assistant = () => {
   const [contextMenuMessage, setContextMenuMessage] =
     useState<MessageData | null>(null);
   const ref = createRef<HTMLTextAreaElement>();
+  const clickOutsideRef = createRef<HTMLDivElement>();
+  useClickOutside(clickOutsideRef, () => {
+    setContextMenuMessage(null);
+  });
   const {
     systemPrompt,
     chatbotName,
@@ -98,8 +33,9 @@ const Assistant = () => {
     llamaEndpoint,
     stop,
   } = useContext(SettingsContext);
+  const { complete } = useCompletion();
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (value: string) => {
     const content = value.trim();
     setValue("");
 
@@ -126,7 +62,7 @@ const Assistant = () => {
     const controller = new AbortController();
     setAbortController(controller);
 
-    await queryLlama(
+    await complete(
       llamaEndpoint,
       systemPrompt,
       chatbotName,
@@ -142,9 +78,14 @@ const Assistant = () => {
     setIsLoading(false);
   };
 
-  const getFocus = useCallback(() => {
-    ref.current?.focus();
-  }, [ref]);
+  const getFocus = useCallback(
+    (event: KeyboardEvent) => {
+      if (event.target === document.body) {
+        ref.current?.focus();
+      }
+    },
+    [ref],
+  );
 
   useEffect(() => {
     document.addEventListener("keypress", getFocus);
@@ -156,13 +97,13 @@ const Assistant = () => {
 
   return (
     <div className="flex-col overflow-hidden">
-      <div className="flex-col-reverse grow p-1 overflow-auto">
-        {[...messages].reverse().map((message) => {
+      <div className="flex-col-reverse grow p-1 overflow-auto position-relative">
+        {[...messages].reverse().map((message, index) => {
           const { content, author } = message;
 
           return (
             <div
-              className={`rounded-3 bg-gray-200 position-relative p-3 ${
+              className={`rounded-3 bg-gray-200 p-3 ${
                 author === userName
                   ? "rounded-bottom-right-0 m-left-2"
                   : "rounded-bottom-left-0 m-right-2"
@@ -171,23 +112,35 @@ const Assistant = () => {
                 event.preventDefault();
                 setContextMenuMessage(message);
               }}
+              key={index}
             >
-              <Copy
-                onClick={async () => {
-                  await navigator.clipboard.writeText(content);
-                }}
-              >
-                <i className="bi-clipboard"></i>
-              </Copy>
-
               <Markdown components={{ code: CodeBlock }}>{content}</Markdown>
             </div>
           );
         })}
+
+        {contextMenuMessage && (
+          <ContextMenu
+            contextRef={clickOutsideRef}
+            message={contextMenuMessage}
+            close={() => {
+              setContextMenuMessage(null);
+            }}
+          />
+        )}
       </div>
 
       <div className="flex-col gap-2 p-1">
         <div className="flex">
+          <button
+            onClick={() => {
+              setMessages([]);
+            }}
+            className="danger"
+          >
+            Clear
+          </button>
+
           {isLoading && abortController !== null && (
             <button
               onClick={() => {
@@ -199,14 +152,20 @@ const Assistant = () => {
             </button>
           )}
 
-          <button
-            onClick={() => {
-              setMessages([]);
-            }}
-            className="danger"
-          >
-            Clear
-          </button>
+          {!isLoading && messages.length > 1 && (
+            <button
+              onClick={async () => {
+                messages.pop();
+                setMessages(messages);
+                const lastMessage = messages.pop();
+                if (lastMessage) {
+                  await handleSubmit(lastMessage.content);
+                }
+              }}
+            >
+              Regenerate
+            </button>
+          )}
         </div>
 
         <form
@@ -215,7 +174,7 @@ const Assistant = () => {
             event.preventDefault();
 
             if (!isLoading) {
-              await handleSubmit();
+              await handleSubmit(value);
             }
           }}
         >
@@ -224,7 +183,9 @@ const Assistant = () => {
             onKeyDown={async (event) => {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
-                await handleSubmit();
+                if (value.trim().length > 0) {
+                  await handleSubmit(value);
+                }
                 event.target.style.height = "";
                 event.target.style.height =
                   event.target.scrollHeight - 16 + "px";
@@ -245,22 +206,9 @@ const Assistant = () => {
             Send
           </button>
         </form>
-
-        {contextMenuMessage && <ContextMenu message={contextMenuMessage} />}
       </div>
     </div>
   );
 };
 
 export default Assistant;
-
-const Copy = styled.button`
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  aspect-ratio: 1/1;
-  border: none;
-  font-size: 0.75rem;
-  border-radius: 5px;
-  cursor: pointer;
-`;
