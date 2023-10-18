@@ -45,12 +45,18 @@ button.danger {
   background-color: var(--red-500);
   color: var(--gray-900);
 }
+button.danger:disabled {
+  background-color: var(--gray-400);
+}
 button.danger:hover {
   border-color: transparent;
 }
 button.primary {
   background-color: var(--gold-500);
   color: var(--gray-200);
+}
+button.primary:disabled {
+  background-color: var(--gray-400);
 }
 button.primary:hover {
   border-color: transparent;
@@ -1002,6 +1008,10 @@ small, .text_small {
   position: absolute;
 }
 
+.position-fixed {
+  position: fixed;
+}
+
 .cursor-pointer {
   cursor: pointer;
 }
@@ -1128,6 +1138,7 @@ small, .text_small {
   --gray-400: #757575;
   --gray-900: #E5E5E5;
   --gold-500: #DCB800;
+  --red-400: #6e5b00;
   --red-500: #CD5C5C;
   --blue-500: #646cff;
   --blue-600: #535bf2;
@@ -1238,6 +1249,22 @@ small, .text_small {
 
 .hover\:border-gold-500:hover {
   border: var(--gold-500);
+}
+
+.bg-red-400 {
+  background-color: var(--red-400);
+}
+
+.border-red-400 {
+  border: 1px solid var(--red-400);
+}
+
+.hover\:bg-red-400:hover {
+  background-color: var(--red-400);
+}
+
+.hover\:border-red-400:hover {
+  border: var(--red-400);
 }
 
 .bg-red-500 {

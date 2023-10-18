@@ -62,20 +62,22 @@ const Assistant = () => {
     const controller = new AbortController();
     setAbortController(controller);
 
-    await complete(
-      llamaEndpoint,
-      systemPrompt,
-      chatbotName,
-      promptTemplate,
-      stop,
-      controller.signal,
-      history,
-      (content: string) => {
-        setMessages([...newMessages, { content, author: chatbotName }]);
-      },
-    );
-
-    setIsLoading(false);
+    try {
+      await complete(
+        llamaEndpoint,
+        systemPrompt,
+        chatbotName,
+        promptTemplate,
+        stop,
+        controller.signal,
+        history,
+        (content: string) => {
+          setMessages([...newMessages, { content, author: chatbotName }]);
+        },
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getFocus = useCallback(
@@ -97,54 +99,59 @@ const Assistant = () => {
 
   return (
     <div className="flex-col overflow-hidden">
-      <div className="flex-col-reverse grow p-1 overflow-auto position-relative">
-        {[...messages].reverse().map((message, index) => {
-          const { content, author } = message;
+      <div className="position-relative grow flex-col overflow-hidden">
+        <div className="flex-col-reverse p-1 overflow-auto">
+          {[...messages].reverse().map((message, index) => {
+            const { content, author } = message;
 
-          return (
-            <div
-              className={`rounded-3 bg-gray-200 p-3 ${
-                author === userName
-                  ? "rounded-bottom-right-0 m-left-2"
-                  : "rounded-bottom-left-0 m-right-2"
-              }`}
-              onContextMenu={(event) => {
-                event.preventDefault();
-                setContextMenuMessage(message);
+            return (
+              <div
+                className={`rounded-3 bg-gray-200 p-3 ${
+                  author === userName
+                    ? "rounded-bottom-right-0 m-left-2"
+                    : "rounded-bottom-left-0 m-right-2"
+                }`}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  setContextMenuMessage(message);
+                }}
+                key={index}
+              >
+                <Markdown components={{ code: CodeBlock }}>{content}</Markdown>
+              </div>
+            );
+          })}
+
+          {contextMenuMessage && (
+            <ContextMenu
+              contextRef={clickOutsideRef}
+              message={contextMenuMessage}
+              close={() => {
+                setContextMenuMessage(null);
               }}
-              key={index}
-            >
-              <Markdown components={{ code: CodeBlock }}>{content}</Markdown>
-            </div>
-          );
-        })}
-
-        {contextMenuMessage && (
-          <ContextMenu
-            contextRef={clickOutsideRef}
-            message={contextMenuMessage}
-            close={() => {
-              setContextMenuMessage(null);
-            }}
-          />
-        )}
+            />
+          )}
+        </div>
       </div>
 
       <div className="flex-col gap-2 p-1">
         <div className="flex">
-          <button
-            onClick={() => {
-              setMessages([]);
-            }}
-            className="danger"
-          >
-            Clear
-          </button>
+          {messages.length > 0 && (
+            <button
+              onClick={() => {
+                setMessages([]);
+              }}
+              className="danger"
+            >
+              Clear
+            </button>
+          )}
 
           {isLoading && abortController !== null && (
             <button
               onClick={() => {
                 abortController.abort();
+                setIsLoading(false);
               }}
               className="danger"
             >
@@ -183,9 +190,11 @@ const Assistant = () => {
             onKeyDown={async (event) => {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
-                if (value.trim().length > 0) {
+
+                if (value.trim().length > 0 && !isLoading) {
                   await handleSubmit(value);
                 }
+
                 event.target.style.height = "";
                 event.target.style.height =
                   event.target.scrollHeight - 16 + "px";
@@ -201,7 +210,10 @@ const Assistant = () => {
             placeholder={`Ask something to ${chatbotName}…`}
           />
 
-          <button className="primary flex align-center" disabled={isLoading}>
+          <button
+            className="primary flex align-center"
+            disabled={value.trim().length === 0 || isLoading}
+          >
             <i className="bi-send" />
             Send
           </button>

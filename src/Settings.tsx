@@ -102,13 +102,20 @@ export default function Settings() {
           {Object.entries(TEMPLATES).map(
             ([
               key,
-              { promptTemplate: newPromptTemplate, chatHistoryTemplate, stop },
+              {
+                promptTemplate: newPromptTemplate,
+                chatHistoryTemplate: newChatHistoryTemplate,
+                stop,
+              },
             ]) => {
               return (
                 <button
                   key={key}
                   className={
-                    promptTemplate === newPromptTemplate ? "primary" : ""
+                    promptTemplate === newPromptTemplate &&
+                    chatHistoryTemplate === newChatHistoryTemplate
+                      ? "primary"
+                      : ""
                   }
                   onClick={() => {
                     setChatHistoryTemplate(chatHistoryTemplate);

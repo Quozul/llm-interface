@@ -13,9 +13,7 @@ export default function ContextMenu({ message, contextRef, close }: Props) {
       ref={contextRef}
       className="position-absolute bottom-2 left-2 right-2 list-group"
     >
-      <div className="list-entry">
-        {message.author}: {message.content}
-      </div>
+      <div className="list-entry">Message of {message.author}</div>
 
       <div
         className="list-entry hover:bg-gray-200 cursor-pointer flex"

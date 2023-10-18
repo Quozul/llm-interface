@@ -84,16 +84,19 @@ export default function useCompletion() {
 
     while (true) {
       try {
+        if (signal.aborted) break;
+
         const { done, value } = await reader.read();
         const decoded = decoder.decode(value);
-        const cleaned = decoded.split("\n")[0].replace("data: ", "").trim();
+        const cleaned = decoded.replace("data: ", "").trim();
         const { content, stop } = JSON.parse(cleaned);
-        if (stop || done) {
-          break;
-        }
+
+        if (stop || done) break;
+
         fullContent += content;
         callback(fullContent.trim());
       } catch (e) {
+        console.log(e);
         break;
       }
     }
