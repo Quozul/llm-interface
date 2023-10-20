@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useContext } from "react";
+import { SettingsContext } from "./SettingsContext.tsx";
 
 export interface Params {
   stream: boolean;
@@ -43,14 +44,10 @@ export const DEFAULT_PARAMS: Params = {
 };
 
 export default function useCompletion() {
-  const [params, setParams] = useState<Params>(DEFAULT_PARAMS);
+  const { systemPrompt, chatbotName, promptTemplate, llamaEndpoint, stop } =
+    useContext(SettingsContext);
 
   async function complete(
-    llamaEndpoint: string,
-    systemPrompt: string,
-    chatbotName: string,
-    promptTemplate: string,
-    stop: string[],
     signal: AbortSignal,
     history: string,
     callback: (content: string) => void,

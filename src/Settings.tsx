@@ -2,7 +2,13 @@ import { useContext } from "react";
 import { SettingsContext } from "./SettingsContext.tsx";
 import TextArea from "./TextArea.tsx";
 
-const TEMPLATES = {
+type Template = {
+  promptTemplate: string;
+  chatHistoryTemplate: string;
+  stop: (chatbotName: string, userName: string) => string[];
+};
+
+const TEMPLATES: Record<string, Template> = {
   chat: {
     promptTemplate: "{{prompt}}\n\n{{history}}\n{{char}}: ",
     chatHistoryTemplate: "{{name}}: {{message}}",
@@ -18,6 +24,21 @@ const TEMPLATES = {
       "<|im_start|>system\n{{prompt}}<|im_end|>\n{{history}}\n<|im_start|>{{char}}\n",
     chatHistoryTemplate: "<|im_start|>{{name}}\n{{message}}<|im_end|>",
     stop: () => ["</s>", "<|im_start|>", "<|im_end|>"],
+  },
+  zephyr: {
+    promptTemplate: "<|system|>\n{{prompt}}</s>\n{{history}}\n<|{{char}}|>\n",
+    chatHistoryTemplate: "<|{{name}}|>\n{{message}}</s>",
+    stop: (chatbotName: string, userName: string) => [
+      "</s>",
+      `<|${chatbotName}|>`,
+      `<|${userName}|>`,
+    ],
+  },
+  instruct: {
+    promptTemplate:
+      "<s>[INST] <<SYS>>\n{{prompt}}\n<</SYS>>\n{{history}}[/INST]\n",
+    chatHistoryTemplate: "{{message}}",
+    stop: () => ["<s>", "[INST]", "<<SYS>>", "</s>", "[/INST]", "<</SYS>>"],
   },
   stable: {
     promptTemplate: "### System:\n{{prompt}}\n\n{{history}}\n### {{char}}:\n",
@@ -118,7 +139,7 @@ export default function Settings() {
                       : ""
                   }
                   onClick={() => {
-                    setChatHistoryTemplate(chatHistoryTemplate);
+                    setChatHistoryTemplate(newChatHistoryTemplate);
                     setPromptTemplate(newPromptTemplate);
                     setStop(stop(chatbotName, userName));
                   }}

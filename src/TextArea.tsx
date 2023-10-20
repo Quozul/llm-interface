@@ -20,6 +20,7 @@ export default function TextArea({
       }}
       className={`overflow-hidden ${className}`}
       ref={textAreaRef}
+      rows={1}
       {...props}
     />
   );

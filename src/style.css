@@ -212,25 +212,6 @@ button.primary:hover {
   }
 }
 
-.grid.gap-1, .flex.gap-1 {
-  gap: 8px;
-}
-.grid.gap-2, .flex.gap-2 {
-  gap: 16px;
-}
-.grid.gap-3, .flex.gap-3 {
-  gap: 24px;
-}
-.grid.gap-4, .flex.gap-4 {
-  gap: 32px;
-}
-.grid.gap-5, .flex.gap-5 {
-  gap: 40px;
-}
-.grid.gap-6, .flex.gap-6 {
-  gap: 48px;
-}
-
 .p-1 {
   padding: 8px;
 }
@@ -1328,4 +1309,23 @@ a:hover {
 hr {
   width: 100%;
   border-color: var(--gray-300);
+}
+
+.gap-1, .gap-1 {
+  gap: 8px;
+}
+.gap-2, .gap-2 {
+  gap: 16px;
+}
+.gap-3, .gap-3 {
+  gap: 24px;
+}
+.gap-4, .gap-4 {
+  gap: 32px;
+}
+.gap-5, .gap-5 {
+  gap: 40px;
+}
+.gap-6, .gap-6 {
+  gap: 48px;
 }

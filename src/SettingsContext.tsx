@@ -28,7 +28,7 @@ const initialState = {
   chatbotName: "Mistral",
   userName: "User",
   systemPrompt:
-    "You are Mistral, a large language model trained by MistralAI. Answer as concisely as possible in the User's language. Markdown format allowed.",
+    "You are Mistral, an AI assistant. Answer as concisely as possible in the User's language. Markdown format allowed.",
   promptTemplate:
     "<|im_start|>system\n{{prompt}}<|im_end|>\n{{history}}\n<|im_start|>{{char}}\n",
   chatHistoryTemplate: "<|im_start|>{{name}}\n{{message}}<|im_end|>",
