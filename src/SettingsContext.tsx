@@ -5,6 +5,7 @@ import {
   SetStateAction,
   useState,
 } from "react";
+import { TEMPLATES } from "./Settings.tsx";
 
 type ContextType = {
   chatbotName: string;
@@ -23,16 +24,17 @@ type ContextType = {
   setStop: Dispatch<SetStateAction<string[]>>;
 };
 
+const templateName = "zephyr";
+
 const initialState = {
   llamaEndpoint: "http://localhost:8080",
-  chatbotName: "Mistral",
+  chatbotName: "Zephyr",
   userName: "User",
   systemPrompt:
-    "You are Mistral, an AI assistant. Answer as concisely as possible in the User's language. Markdown format allowed.",
-  promptTemplate:
-    "<|im_start|>system\n{{prompt}}<|im_end|>\n{{history}}\n<|im_start|>{{char}}\n",
-  chatHistoryTemplate: "<|im_start|>{{name}}\n{{message}}<|im_end|>",
-  stop: ["</s>", "<|im_start|>", "<|im_end|>"],
+    "You are Zephyr, an AI assistant. Answer as concisely as possible in the User's language. Markdown format allowed.",
+  promptTemplate: TEMPLATES[templateName].promptTemplate,
+  chatHistoryTemplate: TEMPLATES[templateName].chatHistoryTemplate,
+  stop: TEMPLATES[templateName].stop,
   setChatbotName: () => void 0,
   setUserName: () => void 0,
   setSystemPrompt: () => void 0,

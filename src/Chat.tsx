@@ -6,17 +6,36 @@ import ContextMenu from "./ContextMenu.tsx";
 import "./style.css";
 import TextArea from "./TextArea.tsx";
 import { SettingsContext } from "./SettingsContext.tsx";
-import useCompletion from "./useCompletion.ts";
+import useCompletion from "./chat/useCompletion.ts";
 import useClickOutside from "./useClickOutside.ts";
+import useHistory from "./chat/useHistory.ts";
 
 export type MessageData = { content: string; author: string };
 
+const timeFormatter = new Intl.DateTimeFormat(undefined, {
+  hour: "numeric",
+  minute: "numeric",
+  hour12: false,
+});
+
+const dateFormatter = new Intl.DateTimeFormat(undefined, {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+});
+
+function formatTimeOrDate(date: Date) {
+  const today = new Date();
+
+  if (new Date(date).getDate() === today.getDate()) {
+    return "Today at " + timeFormatter.format(date);
+  } else {
+    return dateFormatter.format(date);
+  }
+}
+
 const Assistant = () => {
   const [value, setValue] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [abortController, setAbortController] =
-    useState<AbortController | null>(null);
-  const [messages, setMessages] = useState<MessageData[]>([]);
   const [contextMenuMessage, setContextMenuMessage] =
     useState<MessageData | null>(null);
   const ref = createRef<HTMLTextAreaElement>();
@@ -24,9 +43,9 @@ const Assistant = () => {
   useClickOutside(clickOutsideRef, () => {
     setContextMenuMessage(null);
   });
-  const { chatbotName, userName, chatHistoryTemplate } =
-    useContext(SettingsContext);
-  const { complete } = useCompletion();
+  const { chatbotName, userName } = useContext(SettingsContext);
+  const completion = useCompletion();
+  const history = useHistory(completion.latestContent);
 
   const handleSubmit = async (value: string) => {
     const content = value.trim();
@@ -36,31 +55,17 @@ const Assistant = () => {
       return;
     }
 
-    const newMessages: MessageData[] = [
-      ...messages,
-      { content, author: userName },
-    ];
-    setMessages(newMessages);
-
-    setIsLoading(true);
-
-    const history = newMessages
-      .map(({ content, author }) =>
-        chatHistoryTemplate
-          .replace("{{name}}", author)
-          .replace("{{message}}", content),
-      )
-      .join("\n");
-
-    const controller = new AbortController();
-    setAbortController(controller);
+    const formattedHistory = history.addToHistory(userName, content);
 
     try {
-      await complete(controller.signal, history, (content: string) => {
-        setMessages([...newMessages, { content, author: chatbotName }]);
-      });
-    } finally {
-      setIsLoading(false);
+      const { content: generatedContent, error } =
+        await completion.complete(formattedHistory);
+
+      if (generatedContent !== null) {
+        history.addToHistory(chatbotName, generatedContent, error);
+      }
+    } catch (e) {
+      history.addToHistory("System", "", true);
     }
   };
 
@@ -85,8 +90,13 @@ const Assistant = () => {
     <div className="flex-col overflow-hidden">
       <div className="position-relative grow flex-col overflow-hidden">
         <div className="flex-col-reverse p-1 overflow-auto gap-2">
-          {[...messages].reverse().map((message, index) => {
-            const { content, author } = message;
+          {history.completeHistory.map((message, index) => {
+            const {
+              message: content,
+              name: author,
+              error,
+              timestamp,
+            } = message;
 
             return (
               <div
@@ -94,7 +104,14 @@ const Assistant = () => {
                   author === userName ? "align-flex-end" : "align-flex-start"
                 }`}
               >
-                {author !== userName && <span>{author}</span>}
+                {author !== userName && (
+                  <div>
+                    {author} ·{" "}
+                    <span className="text-muted">
+                      {formatTimeOrDate(timestamp)}
+                    </span>
+                  </div>
+                )}
                 <div
                   className={`rounded-3 bg-gray-200 p-3 ${
                     author === userName
@@ -107,9 +124,15 @@ const Assistant = () => {
                   }}
                   key={index}
                 >
-                  <Markdown components={{ code: CodeBlock }}>
-                    {content}
-                  </Markdown>
+                  {!content && error ? (
+                    <span className="text-danger">
+                      An error has occurred while generating the response.
+                    </span>
+                  ) : (
+                    <Markdown components={{ code: CodeBlock }}>
+                      {content}
+                    </Markdown>
+                  )}
                 </div>
               </div>
             );
@@ -129,10 +152,11 @@ const Assistant = () => {
 
       <div className="flex-col gap-2 p-1">
         <div className="flex">
-          {messages.length > 0 && (
+          {history.completeHistory.length > 0 && (
             <button
               onClick={() => {
-                setMessages([]);
+                history.clearHistory();
+                completion.reset();
               }}
               className="danger"
             >
@@ -140,11 +164,10 @@ const Assistant = () => {
             </button>
           )}
 
-          {isLoading && abortController !== null && (
+          {completion.isLoading && (
             <button
               onClick={() => {
-                abortController.abort();
-                setIsLoading(false);
+                completion.abort();
               }}
               className="danger"
             >
@@ -152,7 +175,7 @@ const Assistant = () => {
             </button>
           )}
 
-          {!isLoading && messages.length > 1 && (
+          {/*completion.isLoading && history.completeHistory.length > 1 && (
             <button
               onClick={async () => {
                 messages.pop();
@@ -165,7 +188,7 @@ const Assistant = () => {
             >
               Regenerate
             </button>
-          )}
+          )*/}
         </div>
 
         <form
@@ -173,7 +196,7 @@ const Assistant = () => {
           onSubmit={async (event) => {
             event.preventDefault();
 
-            if (!isLoading) {
+            if (!completion.isLoading) {
               await handleSubmit(value);
             }
           }}
@@ -184,7 +207,7 @@ const Assistant = () => {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
 
-                if (value.trim().length > 0 && !isLoading) {
+                if (value.trim().length > 0 && !completion.isLoading) {
                   await handleSubmit(value);
                 }
 
@@ -205,7 +228,7 @@ const Assistant = () => {
 
           <button
             className="primary flex align-center"
-            disabled={value.trim().length === 0 || isLoading}
+            disabled={value.trim().length === 0 || completion.isLoading}
           >
             <i className="bi-send" />
             Send

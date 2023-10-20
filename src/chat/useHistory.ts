@@ -4,47 +4,60 @@ import { SettingsContext } from "../SettingsContext.tsx";
 type HistoryEntry = {
   name: string;
   message: string;
+  timestamp: Date;
+  error?: boolean;
 };
 
-export default function useHistory() {
+export default function useHistory(latestContent: string | null) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [latest, setLatest] = useState<HistoryEntry | null>(null);
-  const { chatHistoryTemplate } = useContext(SettingsContext);
+  const { chatHistoryTemplate, chatbotName } = useContext(SettingsContext);
 
-  function addToHistory(author: string, content: string) {
-    setHistory((prevState) => [
-      ...prevState,
-      { name: author, message: content },
-    ]);
+  const latest: HistoryEntry | null =
+    latestContent === null
+      ? null
+      : {
+          name: chatbotName,
+          timestamp: new Date(),
+          message: latestContent,
+        };
+
+  function addToHistory(
+    author: string,
+    content: string,
+    error: boolean = false,
+  ) {
+    const newMessage = {
+      name: author,
+      message: content,
+      timestamp: new Date(),
+      error,
+    };
+
+    setHistory((prevState) => [...prevState, newMessage]);
+
+    const completeHistory: HistoryEntry[] = [...history, newMessage];
+
+    return completeHistory
+      .map(({ name, message }) =>
+        chatHistoryTemplate
+          .replace("{{name}}", name)
+          .replace("{{message}}", message),
+      )
+      .join("\n");
   }
 
-  function setLatestMessage(author: string, content: string) {
-    setLatest({ name: author, message: content });
-  }
-
-  function addLatestMessage() {
-    if (latest !== null) {
-      setHistory((prevState) => [...prevState, latest]);
-      setLatest(null);
-    }
+  function clearHistory() {
+    setHistory([]);
   }
 
   const completeHistory: HistoryEntry[] =
     latest === null ? history : [...history, latest];
 
-  const formattedHistory = completeHistory
-    .map(({ name, message }) =>
-      chatHistoryTemplate
-        .replace("{{name}}", name)
-        .replace("{{message}}", message),
-    )
-    .join("\n");
-
   return {
     addToHistory,
-    formattedHistory,
-    completeHistory,
-    setLatestMessage,
-    addLatestMessage,
+    completeHistory: completeHistory.sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
+    ),
+    clearHistory,
   };
 }

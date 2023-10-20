@@ -8,7 +8,7 @@ type Template = {
   stop: (chatbotName: string, userName: string) => string[];
 };
 
-const TEMPLATES: Record<string, Template> = {
+export const TEMPLATES: Record<string, Template> = {
   chat: {
     promptTemplate: "{{prompt}}\n\n{{history}}\n{{char}}: ",
     chatHistoryTemplate: "{{name}}: {{message}}",

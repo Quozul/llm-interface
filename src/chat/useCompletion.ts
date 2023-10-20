@@ -1,5 +1,5 @@
-import { useContext } from "react";
-import { SettingsContext } from "./SettingsContext.tsx";
+import { useContext, useState } from "react";
+import { SettingsContext } from "../SettingsContext.tsx";
 
 export interface Params {
   stream: boolean;
@@ -46,13 +46,19 @@ export const DEFAULT_PARAMS: Params = {
 export default function useCompletion() {
   const { systemPrompt, chatbotName, promptTemplate, llamaEndpoint, stop } =
     useContext(SettingsContext);
+  const [abortController, setAbortController] =
+    useState<AbortController | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [latestContent, setLatestContent] = useState<string | null>(null);
 
-  async function complete(
-    signal: AbortSignal,
-    history: string,
-    callback: (content: string) => void,
-  ) {
+  async function complete(history: string) {
+    setIsLoading(true);
+    const controller = new AbortController();
+    setAbortController(controller);
+    const signal = controller.signal;
+
     let fullContent = "";
+    let error = false;
 
     const body: Params = {
       ...DEFAULT_PARAMS,
@@ -73,7 +79,7 @@ export default function useCompletion() {
     });
 
     if (response.body === null) {
-      return;
+      return { content: null, error: true };
     }
 
     const reader = response.body.getReader();
@@ -91,13 +97,30 @@ export default function useCompletion() {
         if (stop || done) break;
 
         fullContent += content;
-        callback(fullContent.trim());
+        setLatestContent(fullContent.trim());
       } catch (e) {
         console.log(e);
+        error = true;
         break;
       }
     }
+
+    setIsLoading(false);
+    setLatestContent(null);
+
+    return { content: fullContent, error };
   }
 
-  return { complete };
+  function abort() {
+    abortController?.abort();
+    setIsLoading(false);
+  }
+
+  function reset() {
+    abortController?.abort();
+    setLatestContent(null);
+    setIsLoading(false);
+  }
+
+  return { complete, abort, isLoading, latestContent, reset };
 }
