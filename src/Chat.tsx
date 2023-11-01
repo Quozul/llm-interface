@@ -10,6 +10,8 @@ import useCompletion from "./chat/useCompletion.ts";
 import useClickOutside from "./useClickOutside.ts";
 import useHistory from "./chat/useHistory.ts";
 
+import { speak, useCurrentVoice } from "./Speak.tsx";
+
 export type MessageData = { content: string; author: string };
 
 const timeFormatter = new Intl.DateTimeFormat(undefined, {
@@ -46,6 +48,7 @@ const Assistant = () => {
   const { chatbotName, userName } = useContext(SettingsContext);
   const completion = useCompletion();
   const history = useHistory(completion.latestContent);
+  const selectedVoice = useCurrentVoice();
 
   const handleSubmit = async (value: string) => {
     const content = value.trim();
@@ -63,8 +66,13 @@ const Assistant = () => {
 
       if (generatedContent !== null) {
         history.addToHistory(chatbotName, generatedContent, error);
+
+        if (selectedVoice !== null) {
+          speak(generatedContent, selectedVoice);
+        }
       }
     } catch (e) {
+      console.error(e);
       history.addToHistory("System", "", true);
     }
   };
@@ -100,7 +108,7 @@ const Assistant = () => {
 
             return (
               <div
-                className={`flex-col ${
+                className={`whitespace-break-spaces flex-col ${
                   author === userName ? "align-flex-end" : "align-flex-start"
                 }`}
               >

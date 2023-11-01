@@ -31,3 +31,7 @@ pre {
     background-color: grey;
     transform: scale(1.2);
 }
+
+.whitespace-break-spaces {
+    white-space: break-spaces;
+}

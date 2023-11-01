@@ -24,7 +24,7 @@ export interface Params {
 
 export const DEFAULT_PARAMS: Params = {
   stream: true,
-  n_predict: 400,
+  n_predict: 2048,
   temperature: 0.7,
   stop: ["</s>"],
   repeat_last_n: 256,

@@ -1,18 +1,19 @@
 import { useContext } from "react";
 import { SettingsContext } from "./SettingsContext.tsx";
 import TextArea from "./TextArea.tsx";
+import Voice from "./Voice.tsx";
 
 type Template = {
   promptTemplate: string;
   chatHistoryTemplate: string;
-  stop: (chatbotName: string, userName: string) => string[];
+  stop: (chatbotName?: string, userName?: string) => string[];
 };
 
 export const TEMPLATES: Record<string, Template> = {
   chat: {
     promptTemplate: "{{prompt}}\n\n{{history}}\n{{char}}: ",
     chatHistoryTemplate: "{{name}}: {{message}}",
-    stop: (chatbotName: string, userName: string) => [
+    stop: (chatbotName?: string, userName?: string) => [
       "</s>",
       `${chatbotName}:`,
       `${userName}:`,
@@ -28,7 +29,7 @@ export const TEMPLATES: Record<string, Template> = {
   zephyr: {
     promptTemplate: "<|system|>\n{{prompt}}</s>\n{{history}}\n<|{{char}}|>\n",
     chatHistoryTemplate: "<|{{name}}|>\n{{message}}</s>",
-    stop: (chatbotName: string, userName: string) => [
+    stop: (chatbotName?: string, userName?: string) => [
       "</s>",
       `<|${chatbotName}|>`,
       `<|${userName}|>`,
@@ -43,7 +44,7 @@ export const TEMPLATES: Record<string, Template> = {
   stable: {
     promptTemplate: "### System:\n{{prompt}}\n\n{{history}}\n### {{char}}:\n",
     chatHistoryTemplate: "### {{name}}:\n{{message}}\n",
-    stop: (chatbotName: string, userName: string) => [
+    stop: (chatbotName?: string, userName?: string) => [
       "</s>",
       `### System:`,
       `### ${chatbotName}:`,
@@ -173,6 +174,8 @@ export default function Settings() {
           />
         </label>
       </div>
+
+      <Voice />
     </div>
   );
 }

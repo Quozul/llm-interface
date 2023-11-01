@@ -15,6 +15,7 @@ type ContextType = {
   chatHistoryTemplate: string;
   llamaEndpoint: string;
   stop: string[];
+  selectedVoice: string | null;
   setChatbotName: Dispatch<SetStateAction<string>>;
   setUserName: Dispatch<SetStateAction<string>>;
   setSystemPrompt: Dispatch<SetStateAction<string>>;
@@ -22,6 +23,7 @@ type ContextType = {
   setChatHistoryTemplate: Dispatch<SetStateAction<string>>;
   setLlamaEndpoint: Dispatch<SetStateAction<string>>;
   setStop: Dispatch<SetStateAction<string[]>>;
+  setSelectedVoice: Dispatch<SetStateAction<string | null>>;
 };
 
 const templateName = "zephyr";
@@ -34,7 +36,8 @@ const initialState = {
     "You are Zephyr, an AI assistant. Answer as concisely as possible in the User's language. Markdown format allowed.",
   promptTemplate: TEMPLATES[templateName].promptTemplate,
   chatHistoryTemplate: TEMPLATES[templateName].chatHistoryTemplate,
-  stop: TEMPLATES[templateName].stop,
+  stop: TEMPLATES[templateName].stop(),
+  selectedVoice: null,
   setChatbotName: () => void 0,
   setUserName: () => void 0,
   setSystemPrompt: () => void 0,
@@ -42,6 +45,7 @@ const initialState = {
   setChatHistoryTemplate: () => void 0,
   setLlamaEndpoint: () => void 0,
   setStop: () => void 0,
+  setSelectedVoice: () => void 0,
 };
 
 export const SettingsContext = createContext<ContextType>(initialState);
@@ -62,6 +66,7 @@ export default function SettingsContextProvider({
   const [chatHistoryTemplate, setChatHistoryTemplate] = useState(
     initialState.chatHistoryTemplate,
   );
+  const [selectedVoice, setSelectedVoice] = useState<string | null>(null);
 
   return (
     <SettingsContext.Provider
@@ -80,6 +85,8 @@ export default function SettingsContextProvider({
         setLlamaEndpoint,
         stop,
         setStop,
+        selectedVoice,
+        setSelectedVoice,
       }}
     >
       {children}
