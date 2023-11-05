@@ -51,6 +51,16 @@ export const TEMPLATES: Record<string, Template> = {
       `### ${userName}:`,
     ],
   },
+  openchat: {
+    promptTemplate:
+      "system: {{prompt}}<|end_of_turn|>\n{{history}}\n{{char}}: ",
+    chatHistoryTemplate: "{{name}}: {{message}}<|end_of_turn|>",
+    stop: (chatbotName?: string, userName?: string) => [
+      `${chatbotName}:`,
+      `${userName}:`,
+      "<|end_of_turn|>",
+    ],
+  },
 };
 
 export default function Settings() {

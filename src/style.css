@@ -170,6 +170,9 @@ button.primary:hover {
   .grid.lg\:cols-6 {
     grid-template-columns: repeat(6, 1fr);
   }
+  .grid.lg\:cols-2-1 {
+    grid-template-columns: 2fr 1fr;
+  }
 }
 @media (min-width: 1200px) {
   .grid.xl\:cols-1 {

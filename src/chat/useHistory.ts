@@ -38,6 +38,7 @@ export default function useHistory(latestContent: string | null) {
     const completeHistory: HistoryEntry[] = [...history, newMessage];
 
     return completeHistory
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
       .map(({ name, message }) =>
         chatHistoryTemplate
           .replace("{{name}}", name)
