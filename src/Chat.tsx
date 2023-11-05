@@ -96,7 +96,7 @@ const Assistant = () => {
 
   return (
     <div className="flex-col overflow-hidden">
-      <div className="position-relative grow flex-col overflow-hidden">
+      <div className="position-relative grow-1 flex-col overflow-hidden">
         <div className="flex-col-reverse p-1 overflow-auto gap-2">
           {history.completeHistory.map((message, index) => {
             const {
@@ -121,7 +121,7 @@ const Assistant = () => {
                   </div>
                 )}
                 <div
-                  className={`rounded-3 bg-gray-200 p-3 ${
+                  className={`rounded-3 bg-background-muted p-3 ${
                     author === userName
                       ? "rounded-bottom-right-0 m-left-2"
                       : "rounded-bottom-left-0 m-right-2"

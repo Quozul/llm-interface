@@ -16,7 +16,7 @@ export default function ContextMenu({ message, contextRef, close }: Props) {
       <div className="list-entry">Message of {message.author}</div>
 
       <div
-        className="list-entry hover:bg-gray-200 cursor-pointer flex"
+        className="list-entry hover:bg-background-muted cursor-pointer flex"
         onClick={async () => {
           await navigator.clipboard.writeText(message.content);
           close();

@@ -82,7 +82,7 @@ export default function Settings() {
 
   return (
     <div className="flex-col p-1 overflow-auto">
-      <div className="flex-col bg-gray-300 p-2 rounded-1">
+      <div className="flex-col bg-background-muted p-2 rounded-1">
         <h2>General settings</h2>
 
         <label className="flex-col">
@@ -126,7 +126,7 @@ export default function Settings() {
         </label>
       </div>
 
-      <div className="flex-col bg-gray-300 p-2 rounded-1">
+      <div className="flex-col bg-background-muted p-2 rounded-1">
         <h2>Prompt template</h2>
 
         <div className="flex align-center">

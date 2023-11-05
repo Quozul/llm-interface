@@ -46,7 +46,7 @@ export default function Voice() {
 
   return (
     <form
-      className="flex-col bg-gray-300 p-2 rounded-1"
+      className="flex-col bg-background-muted p-2 rounded-1"
       onSubmit={(event) => {
         event.preventDefault();
 
